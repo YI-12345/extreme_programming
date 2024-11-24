@@ -121,3 +121,32 @@ app.post('/api/contacts', (req, res) => {
         });
     });
 });
+// 收藏联系人
+app.put('/api/contacts/:id/favorite', (req, res) => {
+    const { id } = req.params;
+    const { is_favorite } = req.body;
+
+    if (is_favorite === undefined) {
+        return res.status(400).json({ error: 'is_favorite 参数不能为空' });
+    }
+
+    pool.query('UPDATE contacts SET is_favorite = ? WHERE id = ?', [is_favorite, id], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send(err);  // 确保只发送一次响应
+        }
+        res.send({ success: true });  // 确保只发送一次响应
+    });
+});
+
+// 删除联系人
+app.delete('/api/contacts/:id', (req, res) => {
+    const { id } = req.params;
+    pool.query('DELETE FROM contacts WHERE id = ?', [id], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send(err);  // 确保只发送一次响应
+        }
+        res.send({ success: true });  // 确保只发送一次响应
+    });
+});

@@ -150,3 +150,90 @@ app.delete('/api/contacts/:id', (req, res) => {
         res.send({ success: true });  // 确保只发送一次响应
     });
 });
+// 导入 Excel
+app.post('/api/import', upload.single('file'), (req, res) => {
+    const filePath = req.file.path;
+    const workbook = XLSX.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(sheet);
+
+    let insertCount = 0;
+    data.forEach(item => {
+        pool.query('INSERT INTO contacts (name) VALUES (?)', [item.name], (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send(err);  // 确保只发送一次响应
+            }
+            const contactId = result.insertId;
+
+            // 如果 item.details 是字符串，尝试将其转换为数组
+            if (item.details && typeof item.details === 'string') {
+                item.details = item.details.split(',').map(detail => {
+                    const [type, value] = detail.split(':');
+                    return { type: type.trim(), value: value.trim() };
+                });
+            }
+
+            // 确保 item.details 是一个有效的数组且不为空
+            if (item.details && Array.isArray(item.details) && item.details.length > 0) {
+                item.details.forEach(detail => {
+                    pool.query('INSERT INTO contact_details (contact_id, contact_type, contact_value) VALUES (?, ?, ?)', 
+                        [contactId, detail.type, detail.value], (err) => {
+                            if (err) {
+                                console.error(err);
+                                return res.status(500).send(err);  // 确保只发送一次响应
+                            }
+                            insertCount++;
+                            if (insertCount === data.length) {
+                                res.send({ success: true });  // 确保只发送一次响应
+                            }
+                        });
+                });
+            } else {
+                console.warn(`No details for contact ${item.name} or details is not an array`);
+            }
+        });
+    });
+});
+
+// 导出联系人到 Excel
+app.get('/api/export', (req, res) => {
+    pool.query('SELECT * FROM contacts', (err, contacts) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send(err);  // 确保只发送一次响应
+        }
+        pool.query('SELECT * FROM contact_details', (err, details) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send(err);  // 确保只发送一次响应
+            }
+
+            const contactsWithDetails = contacts.map(contact => ({
+                ...contact,
+                details: details.filter(detail => detail.contact_id === contact.id)
+            }));
+
+            const excelData = contactsWithDetails.map(contact => ({
+                name: contact.name,
+                details: contact.details.map(detail => `${detail.contact_type}: ${detail.contact_value}`).join(', ')
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Contacts');
+            const filePath = path.join(__dirname, 'contacts.xlsx');
+            XLSX.writeFile(wb, filePath);
+            res.download(filePath, 'contacts.xlsx', (err) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).send(err);  // 确保只发送一次响应
+                }
+            });
+        });
+    });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通讯录管理系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>通讯录管理系统</h1>
+
+        <!-- 添加联系人 -->
+        <div class="form-section">
+            <h2>添加联系人</h2>
+            <input type="text" id="contact-name" placeholder="联系人姓名">
+            <div id="contact-details-section">
+                <div>
+                    <input type="text" class="contact-type" placeholder="联系方式类型 (例如：电话)">
+                    <input type="text" class="contact-value" placeholder="联系方式">
+                    <button class="add-contact-details">添加联系方式</button>
+                </div>
+            </div>
+            <button id="add-contact">添加联系人</button>
+        </div>
+
+        <!-- 联系人列表 -->
+        <div class="list-section">
+            <h2>联系人列表</h2>
+            <ul id="contact-list"></ul>
+        </div>
+
+        <!-- 收藏栏 -->
+        <div class="favorites-section">
+            <h2>收藏联系人</h2>
+            <ul id="favorites-list"></ul>
+        </div>
+
+        <!-- 导入导出功能 -->
+        <div class="export-import-section">
+            <h2>导入/导出</h2>
+            <input type="file" id="import-file">
+            <button id="import-excel">导入 Excel</button>
+            <button id="export-excel">导出 Excel</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
